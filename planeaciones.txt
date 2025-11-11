@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Planeación Didáctica</title>
+    <!-- Carga de Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Configuración de la fuente Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        /* Estilos para la salida HTML generada */
+        #output {
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+        #output h3 {
+            font-size: 1.25rem; /* text-xl */
+            font-weight: 700; /* font-bold */
+            margin-top: 1.5rem; /* mt-6 */
+            margin-bottom: 0.5rem; /* mb-2 */
+            color: #1f2937; /* text-gray-800 */
+        }
+        #output table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem; /* mt-4 */
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border-radius: 0.5rem; /* rounded-lg */
+            overflow: hidden; /* Para que el radius funcione en th */
+        }
+        #output th, #output td {
+            border: 1px solid #ddd; /* border-gray-300 */
+            padding: 0.75rem 1rem; /* p-3 px-4 */
+            text-align: left;
+            vertical-align: top;
+        }
+        #output th {
+            background-color: #f9fafb; /* bg-gray-50 */
+            font-weight: 600; /* font-semibold */
+            color: #374151; /* text-gray-700 */
+        }
+        #output td {
+            background-color: #ffffff; /* bg-white */
+        }
+        #output ul {
+            list-style-type: disc;
+            padding-left: 1.5rem; /* pl-6 */
+            margin-top: 0.5rem; /* mt-2 */
+        }
+
+        /* Spinner de carga */
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Estilos para la impresión */
+        @media print {
+            body > * {
+                display: none; /* Oculta todo por defecto */
+            }
+            #printContent {
+                display: block; /* Muestra solo el contenido de la planeación */
+                width: 100%;
+                margin: 0;
+                padding: 0;
+                box-shadow: none;
+                background-color: white; /* Asegura fondo blanco para ahorrar tinta */
+            }
+            #printContent h2 {
+                font-size: 1.5rem;
+                text-align: center;
+                margin-bottom: 1rem;
+            }
+            #printContent #output {
+                background-color: white !important;
+                border: none;
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+
+    <div id="mainContent" class="bg-white w-full max-w-4xl p-6 sm:p-8 rounded-2xl shadow-xl">
+        <header class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-800 text-center">Generador de Planeación Didáctica</h1>
+            <p class="text-center text-gray-600 mt-2">Basado en la Nueva Escuela Mexicana (NEM)</p>
+        </header>
+
+        <!-- Formulario de Entradas -->
+        <div class="space-y-6">
+            <div>
+                <label for="grado" class="block text-sm font-medium text-gray-700 mb-1">Grado y Nivel</label>
+                <input type
+="text" id="grado" class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ej. Tercer grado de Primaria, Segundo de Secundaria">
+            </div>
+            <div>
+                <label for="pda" class="block text-sm font-medium text-gray-700 mb-1">Proceso de Desarrollo de Aprendizaje (PDA)</label>
+                <textarea id="pda" rows="5" class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Pega aquí el PDA completo que quieres trabajar..."></textarea>
+            </div>
+            
+            <!-- NUEVO CAMPO DE ADECUACIONES CURRICULARES -->
+            <div>
+                <label for="adecuaciones" class="block text-sm font-medium text-gray-700 mb-1">Adecuaciones Curriculares / Necesidades Específicas (Opcional)</label>
+                <textarea id="adecuaciones" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ej. Incluir apoyo visual para alumno con TEA. Reducir la extensión de los textos para alumno con bajo nivel de lectura."></textarea>
+            </div>
+            
+            <div>
+                <label for="sesiones" class="block text-sm font-medium text-gray-700 mb-1">Número de Sesiones (Opcional)</label>
+                <input type="number" id="sesiones" class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ej. 3">
+            </div>
+            
+            <button id="generateButton" class="w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-300 ease-in-out">
+                Generar Planeación y Rúbrica
+            </button>
+        </div>
+
+        <!-- Sección de Carga y Errores -->
+        <div id="loading" class="flex-col items-center justify-center mt-8 hidden">
+            <div class="loader"></div>
+            <p class="text-gray-600 mt-3">Buscando libros y generando planeación... Esto puede tomar un momento.</p>
+        </div>
+        <div id="error" class="text-red-600 bg-red-100 border border-red-400 p-4 rounded-lg mt-8 hidden"></div>
+
+        <!-- Sección de Salida (Se añade un contenedor específico para la impresión) -->
+        <div id="printContent" class="mt-8 hidden">
+            <div id="outputContainer">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Resultado Generado</h2>
+                <div id="output" class="bg-gray-50 border border-gray-200 rounded-lg p-6">
+                    <!-- El contenido generado se insertará aquí -->
+                </div>
+            </div>
+            <!-- NUEVO BOTÓN DE IMPRESIÓN -->
+            <button id="printButton" class="w-full mt-4 bg-green-600 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition duration-300 ease-in-out">
+                Imprimir Planeación
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- Referencias a Elementos del DOM ---
+        const gradoInput = document.getElementById('grado');
+        const pdaInput = document.getElementById('pda');
+        const adecuacionesInput = document.getElementById('adecuaciones'); // Nueva referencia
+        const sesionesInput = document.getElementById('sesiones'); 
+        const generateButton = document.getElementById('generateButton');
+        const printButton = document.getElementById('printButton');
+        const loadingDiv = document.getElementById('loading');
+        const errorDiv = document.getElementById('error');
+        const printContentDiv = document.getElementById('printContent');
+        const outputDiv = document.getElementById('output');
+
+        // --- Configuración de la API ---
+        const apiKey = ""; 
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+        // --- Event Listeners ---
+        generateButton.addEventListener('click', handleGenerate);
+        printButton.addEventListener('click', handlePrint);
+
+        /**
+         * Maneja el evento de impresión.
+         */
+        function handlePrint() {
+            window.print();
+        }
+
+
+        /**
+         * Maneja el evento de clic del botón "Generar".
+         * Recoge las entradas, las valida y lanza la llamada a la API.
+         */
+        async function handleGenerate() {
+            const grado = gradoInput.value;
+            const pda = pdaInput.value;
+            const adecuaciones = adecuacionesInput.value; // Obtener el valor de las adecuaciones
+            const sesiones = sesionesInput.value; 
+
+            // Validación simple
+            if (!grado.trim() || !pda.trim()) {
+                showError("Por favor, completa los campos 'Grado' y 'PDA' para continuar.");
+                return;
+            }
+
+            // Ocultar elementos antiguos y mostrar carga
+            resetUI();
+            loadingDiv.style.display = 'flex';
+
+            try {
+                // --- Prompt para la IA (Modificado para incluir adecuaciones) ---
+                const systemPrompt = `Eres un experto pedagogo y diseñador instruccional, especializado en la Nueva Escuela Mexicana (NEM). Tu tarea es crear planeaciones didácticas completas, detalladas e inclusivas. Debes generar una planeación didáctica y una rúbrica de evaluación en español, formateadas como código HTML simple.`;
+
+                const userQuery = `
+Grado: ${grado}
+Proceso de Desarrollo de Aprendizaje (PDA): ${pda}
+Adecuaciones Curriculares / Necesidades Específicas: ${adecuaciones || 'No especificadas'}
+Número de Sesiones: ${sesiones || 'No especificado'}
+
+Por favor, genera la planeación y la rúbrica formateadas como código HTML simple. 
+Utiliza etiquetas <h3> para los títulos principales ("PLANEACIÓN DIDÁCTICA", "EVALUACIÓN Y RÚBRICA").
+Utiliza tablas (<table>, <tr>, <th>, <td>) para la información clave y la rúbrica.
+
+1. **PLANEACIÓN DIDÁCTICA**
+   Genera una tabla con dos columnas: "Componente" y "Descripción".
+   Incluye las siguientes filas (Componentes):
+   * Campo Formativo: (Infiérelo del PDA)
+   * Asignatura (Disciplina): (Si aplica)
+   * Ejes Articuladores: (Selecciona los más relevantes)
+   * Metodología Recomendada: (Ej. Aprendizaje Basado en Proyectos)
+   * Tema/Proyecto: (Propón un nombre creativo)
+   * Objetivo de Aprendizaje: (Redactado para el alumno)
+   * Recursos y Materiales: (Listados con <ul>)
+   * **Adecuaciones Curriculares:** (Incluye las adecuaciones proporcionadas por el usuario y explica cómo se aplicarán en las actividades si son relevantes. Si el usuario no especificó, indica "Sin adecuaciones específicas requeridas.")
+
+   Genera una segunda tabla para la "Secuencia Didáctica".
+   * La tabla debe tener dos columnas: "Fase/Sesión" y "Actividades Detalladas".
+   
+   * **INSTRUCCIÓN CLAVE (BÚSQUEDA Y ADECUACIONES):**
+     * **Usa tu herramienta de búsqueda** para encontrar qué libros de texto de la SEP (Proyectos de Aula, Escolares, Comunitarios, Nuestros Saberes) y qué proyectos o páginas específicas se alinean con el Grado y el PDA proporcionados.
+     * **Basa las "Actividades Detalladas" en esos hallazgos**. Haz referencia específica a los libros y páginas encontrados (Ej. "Iniciar el proyecto '... ' del libro Proyectos de Aula, pág. 15-20").
+     * **Ajusta las actividades para incorporar las "Adecuaciones Curriculares"** especificadas por el usuario.
+     * Si la búsqueda no arroja resultados claros, diseña actividades generales, pero prioriza basarte en los libros de texto oficiales.
+   
+   * **IMPORTANTE (SESIONES):** Si se especificó un "Número de Sesiones" (Ej. 3), distribuye las actividades (basadas en los libros) a lo largo de ESE número de sesiones.
+   * Si el número de sesiones es "No especificado", simplemente usa las filas "Inicio", "Desarrollo" y "Cierre".
+
+2. **EVALUACIÓN Y RÚBRICA**
+   Genera una tabla para la "Información de Evaluación" con dos columnas: "Elemento" y "Descripción".
+   Incluye las siguientes filas (Elementos):
+   * Instrumento de Evaluación: Rúbrica
+   * Producto/Evidencia a Evaluar: (Define qué producto concreto se evaluará, usualmente derivado del proyecto del libro de texto)
+
+   Genera una tabla para la "Rúbrica Detallada".
+   * La primera fila (encabezado <th>) debe ser: "Criterio", "Nivel 4: Sobresaliente", "Nivel 3: Logrado", "Nivel 2: En Proceso", "Nivel 1: Requiere Apoyo".
+   * Las filas siguientes deben tener el criterio en la primera columna (<td>) y las descripciones de desempeño en las demás.
+   * Incluye al menos 3 criterios de evaluación claros basados en el PDA, **considerando las Adecuaciones Curriculares si fueron proporcionadas**.
+`;
+
+                const generatedText = await callGemini(systemPrompt, userQuery);
+                displayOutput(generatedText);
+
+            } catch (error) {
+                console.error(error);
+                showError("Ocurrió un error al contactar con la IA. Por favor, revisa la consola para más detalles.");
+            } finally {
+                loadingDiv.style.display = 'none';
+            }
+        }
+
+        /**
+         * Llama a la API de Gemini con reintentos (backoff exponencial).
+         * @param {string} systemPrompt - La instrucción del sistema para la IA.
+         * @param {string} userQuery - El prompt del usuario.
+         * @returns {Promise<string>} El texto generado por la IA.
+         */
+        async function callGemini(systemPrompt, userQuery) {
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                systemInstruction: {
+                    parts: [{ text: systemPrompt }]
+                },
+                // SE AÑADE LA HERRAMIENTA DE BÚSQUEDA
+                tools: [{
+                    "google_search": {}
+                }],
+                generationConfig: {
+                    temperature: 0.7,
+                    topK: 1,
+                    topP: 1,
+                    maxOutputTokens: 8192,
+                },
+            };
+
+            let retries = 3;
+            let delay = 1000;
+
+            while (retries > 0) {
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Error de API: ${response.status} ${response.statusText}`);
+                    }
+
+                    const result = await response.json();
+
+                    if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts[0].text) {
+                        // Limpiar el texto si la IA envuelve el HTML en markdown
+                        let text = result.candidates[0].content.parts[0].text;
+                        if (text.startsWith("```html")) {
+                            text = text.substring(7);
+                        }
+                        if (text.endsWith("```")) {
+                            text = text.substring(0, text.length - 3);
+                        }
+                        return text.trim();
+                    } else {
+                        throw new Error("Respuesta inesperada de la API o contenido bloqueado.");
+                    }
+                } catch (error) {
+                    console.warn(`Intento fallido. Reintentando en ${delay / 1000}s...`, error);
+                    retries--;
+                    if (retries === 0) {
+                        throw error; // Lanza el error final después de todos los reintentos
+                    }
+                    await new Promise(res => setTimeout(res, delay));
+                    delay *= 2; // Backoff exponencial
+                }
+            }
+        }
+
+        /**
+         * Muestra el texto generado como HTML en el contenedor de salida.
+         * @param {string} html - El texto (HTML) a mostrar.
+         */
+        function displayOutput(html) {
+            outputDiv.innerHTML = html; // Usamos innerHTML para renderizar las tablas
+            printContentDiv.style.display = 'block'; // Muestra la sección de salida y el botón de impresión
+        }
+
+        /**
+         * Muestra un mensaje de error.
+         * @param {string} message - El mensaje de error.
+         */
+        function showError(message) {
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        /**
+         * Resetea la UI, ocultando mensajes de error y salida antiguos.
+         */
+        function resetUI() {
+            errorDiv.style.display = 'none';
+            printContentDiv.style.display = 'none';
+            outputDiv.innerHTML = ''; // Limpiamos el innerHTML
+        }
+
+    </script>
+</body>
+</html>
